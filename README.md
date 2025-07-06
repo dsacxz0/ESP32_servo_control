@@ -1,6 +1,6 @@
 # 使用uROS控制servo
 ## 步驟
-1. 將 ESP32 以 USB 模式連接電腦
+1. 將 ESP32 以有線方式連接電腦
 
 2. 將此 repo clone 進 WSL2 並使用 VScode 開啟
 
