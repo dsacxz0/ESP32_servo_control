@@ -8,7 +8,7 @@ NUM_SERVOS = 12
 class ServoTrajectoryPublisher(Node):
     def __init__(self):
         super().__init__('servo_trajectory_publisher')
-        self.pub = self.create_publisher(JointTrajectory, '/servo_trajectory', 10)
+        self.pub = self.create_publisher(JointTrajectory, '/servo_angle', 10)
         self.positions = [90.0] * NUM_SERVOS
         self.get_logger().info(f'輸入 q 離開；可控制 1–{NUM_SERVOS} 號舵機')
 
@@ -21,6 +21,7 @@ class ServoTrajectoryPublisher(Node):
         pt.time_from_start.nanosec = 0
         msg.points = [pt]
         self.pub.publish(msg)
+        print(msg)
         self.get_logger().info(f'Published → {self.positions}')
 
     def run_menu(self):

@@ -21,6 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             'servo_trajectory_pub = servo_publisher.angle_pub:main',
+            'servo_motor_pub = servo_publisher.motor_pub:main',
+            'spider_walk = servo_publisher.spider_walk:main'
         ],
     },
 )
