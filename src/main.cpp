@@ -8,21 +8,17 @@
 #include <trajectory_msgs/msg/joint_trajectory.h>
 #include <trajectory_msgs/msg/joint_trajectory_point.h>
 
-// ===================== WiFi & micro-ROS config =====================
 char ssid[] = "";             // set your WiFi SSID
 char password[] = "";       // set your WiFi Password
 IPAddress agent_ip(192, 168, 215, 102); // micro-ROS agent IP
 int agent_port = 8888;
 
-// ===================== Servo bus (ESP32 UART2) =====================
 #define RX_PIN 18
 #define TX_PIN 19
 HardwareSerial BusSerial(2);
 
-// ===================== App config =====================
 #define NUM_SERVOS 12
 
-// ===================== LX-16A protocol constants =====================
 static const uint8_t SERVO_ID_ALL = 0xFE;
 
 static const uint8_t SERVO_MOVE_TIME_WRITE         = 1;
@@ -58,7 +54,6 @@ static const uint8_t SERVO_ERROR_OVER_TEMPERATURE  = 1;
 static const uint8_t SERVO_ERROR_OVER_VOLTAGE      = 2;
 static const uint8_t SERVO_ERROR_LOCKED_ROTOR      = 4;
 
-// ===================== Helpers =====================
 static inline uint8_t lb(uint16_t v){ return (uint8_t)(v & 0xFF); }
 static inline uint8_t hb(uint16_t v){ return (uint8_t)((v >> 8) & 0xFF); }
 static inline uint16_t makeWord16(uint8_t lo, uint8_t hi){ return (uint16_t)lo + (((uint16_t)hi) << 8); }
@@ -66,7 +61,6 @@ static inline uint16_t makeWord16(uint8_t lo, uint8_t hi){ return (uint16_t)lo +
 template<typename T>
 static inline T clampT(T lo, T hi, T v){ return v < lo ? lo : (v > hi ? hi : v); }
 
-// ===================== LX16A ServoController (Arduino/ESP32) =====================
 class ServoController {
 public:
   explicit ServoController(Stream& ser, uint32_t defaultTimeoutMs = 1000)
@@ -205,10 +199,8 @@ private:
   }
 };
 
-// Global controller instance
 ServoController servoCtl(BusSerial, 1000);
 
-// ===================== WiFi helper =====================
 void connectToWiFi(){
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
@@ -217,7 +209,6 @@ void connectToWiFi(){
   Serial.print("Connected, IP: "); Serial.println(WiFi.localIP());
 }
 
-// ===================== micro-ROS globals =====================
 const char* servo_angle_topic = "/servo_angle";
 const char* motor_speed_topic = "/motor_speed";
 rcl_subscription_t         servo_angle_sub;
@@ -230,7 +221,6 @@ trajectory_msgs__msg__JointTrajectory servo_angle_msg;
 trajectory_msgs__msg__JointTrajectory motor_speed_msg;
 
 
-// ===================== Speed trajectory callback =====================
 void motor_speed_callback(const void * msgin){
   const auto *t = (const trajectory_msgs__msg__JointTrajectory*)msgin;
   if (t->points.size == 0) return;
@@ -246,7 +236,6 @@ void motor_speed_callback(const void * msgin){
   }
 }
 
-// ===================== Trajectory callback =====================
 static inline uint16_t degToTicks(float deg){
   if (deg < 0.0f) deg = 0.0f; if (deg > 240.0f) deg = 240.0f;
   return (uint16_t)(deg / 240.0f * 1000.0f);
@@ -258,11 +247,10 @@ void servo_angle_callback(const void * msgin){
   if (t->points.size == 0){ Serial.println("No points"); return; }
 
   const auto &pt = t->points.data[0];
-  // Optional: use time_from_start if provided (per-point total duration)
-  uint32_t timeMs = 100; // default
+  uint32_t timeMs = 100;
   if (pt.time_from_start.sec > 0 || pt.time_from_start.nanosec > 0){
     uint32_t ms = (uint32_t)pt.time_from_start.sec * 1000u + (pt.time_from_start.nanosec / 1000000u);
-    if (ms == 0) ms = 1; // avoid zero-time
+    if (ms == 0) ms = 1;
     timeMs = clampT<uint32_t>(0, 30000, ms);
   }
 
@@ -278,7 +266,6 @@ void servo_angle_callback(const void * msgin){
   Serial.println("=== Trajectory Done ===");
 }
 
-// ===================== Setup =====================
 void setup(){
   Serial.begin(115200);
   delay(500);
@@ -287,7 +274,6 @@ void setup(){
 
   BusSerial.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
   delay(50);
-  // Enable torque on all servos
   for (uint8_t id = 1; id <= NUM_SERVOS; ++id){ servoCtl.motor_on(id); delay(10); }
 
   Serial.printf("Setting up micro-ROS WiFi transport to %s:%d\n", agent_ip.toString().c_str(), agent_port);
@@ -360,7 +346,6 @@ void setup(){
   Serial.println("Setup complete");
 }
 
-// ===================== Loop =====================
 void loop(){
   if (WiFi.status() != WL_CONNECTED){ Serial.println("WiFi lost; reconnecting..."); connectToWiFi(); }
   rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));  
